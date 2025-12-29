@@ -1,0 +1,41 @@
+{
+  "name": "ecommerce-backend",
+  "version": "1.0.0",
+  "description": "MERN E-Commerce Platform Backend for Hardware IT Shop",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "build": "echo \"No build step defined\"",
+    "seed:admin": "node utils/seedAdmin.js",
+    "seed:products": "node utils/seedProducts.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "mern",
+    "hardware",
+    "shop"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.1",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.12",
+    "razorpay": "^2.9.2",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
+  }
+}
