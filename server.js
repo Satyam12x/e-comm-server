@@ -28,23 +28,22 @@ dotenv.config();
 
 const app = express();
 
-// Initialize database and services
-connectDB();
+// ✅ Configure services (sync operations)
 configureCloudinary();
 initializeRazorpay();
 
-// Create admin user automatically (runs after DB connection)
-createAdminUser();
-verifyEmailConfig();
-
+// ✅ Rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.set('trust proxy', 1);
 
+// ✅ Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
@@ -58,9 +57,33 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use('/api/', limiter);
 
+// ✅ Request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url} - ${req.ip}`);
   next();
+});
+
+// ✅ Database connection middleware for serverless
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    logger.error(`Database connection error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+    });
+  }
+});
+
+// ✅ Root route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'E-Commerce API is running',
+    version: '1.0.0',
+  });
 });
 
 app.get('/api', (req, res) => {
@@ -79,6 +102,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ✅ Test route to check environment
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Test endpoint working',
+    env: {
+      nodeEnv: process.env.NODE_ENV,
+      hasMongoUri: !!process.env.MONGO_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasCloudinary: !!process.env.CLOUDINARY_CLOUD_NAME,
+      hasRazorpay: !!process.env.RAZORPAY_KEY_ID,
+    },
+  });
+});
+
+// ✅ API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
@@ -89,6 +128,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 
+// ✅ 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -96,10 +136,24 @@ app.use((req, res) => {
   });
 });
 
+// ✅ Error handler
 app.use(errorHandler);
 
-// ✅ Only listen in development (not on Vercel)
+// ✅ Initialize admin user and email config (async, non-blocking)
+const initializeServices = async () => {
+  try {
+    await connectDB();
+    await createAdminUser();
+    verifyEmailConfig();
+  } catch (error) {
+    logger.error(`Service initialization error: ${error.message}`);
+  }
+};
+
+// ✅ Only run initialization and listen in development
 if (process.env.NODE_ENV !== 'production') {
+  initializeServices();
+  
   const PORT = process.env.PORT || 5000;
 
   const server = app.listen(PORT, () => {
